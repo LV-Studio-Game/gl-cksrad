@@ -1,0 +1,402 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ultimate Fortune Wheel</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      --card-bg: rgba(255, 255, 255, 0.07);
+      --card-border: rgba(255, 255, 255, 0.18);
+      --accent-gold: #ffd700;
+      --accent-cyan: #00f2fe;
+      --text-color: #ffffff;
+      --wheel-size: 320px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 20px 15px;
+      min-height: 100vh;
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+    }
+
+    .header-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(to right, #ffd700, #ffa500);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+      text-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+    }
+
+    /* GLASS CARD FÜR INPUT */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 15px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      margin-bottom: 25px;
+    }
+
+    .glass-card label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .glass-card textarea {
+      width: 100%;
+      height: 50px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      color: #fff;
+      padding: 10px;
+      font-size: 14px;
+      outline: none;
+      resize: none;
+      transition: border-color 0.3s;
+    }
+
+    .glass-card textarea:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    /* WHEEL CONTAINER */
+    .wheel-wrapper {
+      position: relative;
+      padding: 12px;
+      background: radial-gradient(circle, #2c3e50, #000);
+      border-radius: 50%;
+      box-shadow: 0 0 30px rgba(0, 242, 254, 0.3), inset 0 0 15px rgba(0,0,0,0.8);
+      border: 3px solid var(--accent-gold);
+    }
+
+    .pointer {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-top: 35px solid #ff0055;
+      z-index: 50;
+      filter: drop-shadow(0 4px 8px rgba(255, 0, 85, 0.6));
+    }
+
+    .wheel-container {
+      position: relative;
+      width: var(--wheel-size);
+      height: var(--wheel-size);
+      border-radius: 50%;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      transition: transform 5.5s cubic-bezier(0.1, 0.99, 0.12, 0.99);
+    }
+
+    .wheel-hub {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 55px;
+      height: 55px;
+      background: radial-gradient(circle, #ffd700, #b8860b);
+      border-radius: 50%;
+      z-index: 30;
+      border: 3px solid #fff;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    }
+
+    /* BUTTON */
+    .btn-spin {
+      margin-top: 30px;
+      padding: 16px 45px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #000;
+      background: linear-gradient(45deg, #ffd700, #ff8c00);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-spin:active {
+      transform: scale(0.95);
+    }
+
+    .btn-spin:disabled {
+      background: #555;
+      color: #888;
+      box-shadow: none;
+    }
+
+    /* RESULT */
+    .result-display {
+      margin-top: 20px;
+      font-size: 26px;
+      font-weight: 800;
+      height: 35px;
+      text-align: center;
+      background: linear-gradient(to right, #00f2fe, #4facfe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* SECRET TRIGGER & MODAL */
+    .secret-trigger {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      font-size: 16px;
+      opacity: 0.2;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .secret-modal {
+      display: none;
+      position: fixed;
+      bottom: 40px;
+      left: 12px;
+      background: rgba(0,0,0,0.95);
+      border: 1px solid var(--accent-cyan);
+      padding: 12px;
+      border-radius: 8px;
+      z-index: 1000;
+      font-size: 12px;
+    }
+
+    .secret-modal label {
+      display: block;
+      color: var(--accent-gold);
+      margin-top: 5px;
+      margin-bottom: 2px;
+    }
+
+    .secret-modal select {
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 5px;
+      border-radius: 5px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-title">Lucky Wheel</div>
+
+  <div class="glass-card">
+    <label for="name-input">Teilnehmer</label>
+    <textarea id="name-input" oninput="updateNames()">Alex, Sarah, Michael, Elena, Tim, Lisa</textarea>
+  </div>
+
+  <div class="wheel-wrapper">
+    <div class="pointer"></div>
+    <div class="wheel-hub"></div>
+    <div class="wheel-container">
+      <canvas id="wheel" width="600" height="600"></canvas>
+    </div>
+  </div>
+
+  <button class="btn-spin" id="spin-btn" onclick="spin()">Drehen!</button>
+  <div class="result-display" id="result"></div>
+
+  <div class="secret-trigger" onclick="toggleSecretModal()">🔒</div>
+  <div class="secret-modal" id="secret-modal">
+    <label for="sys-mode-1">1. Drehung Ziel:</label>
+    <select id="sys-mode-1">
+      <option value="sys_std">Zufall (Normal)</option>
+    </select>
+    
+    <label for="sys-mode-2">2. Drehung Ziel:</label>
+    <select id="sys-mode-2">
+      <option value="sys_std">Zufall (Normal)</option>
+    </select>
+  </div>
+
+  <script>
+    let user_data = [];
+    const color_palette = [
+      "#ff0055", "#00f2fe", "#7b2cbf", "#ffb703", 
+      "#2ec4b6", "#e71d36", "#3a86ff", "#ff006e"
+    ];
+
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const sysModeSelect1 = document.getElementById("sys-mode-1");
+    const sysModeSelect2 = document.getElementById("sys-mode-2");
+    const spinBtn = document.getElementById("spin-btn");
+    const resultDiv = document.getElementById("result");
+    const nameInput = document.getElementById("name-input");
+    const secretModal = document.getElementById("secret-modal");
+
+    let currentRotationDegrees = 0;
+    let spinCount = 0;
+
+    function toggleSecretModal() {
+      secretModal.style.display = secretModal.style.display === "block" ? "none" : "block";
+    }
+
+    function updateNames() {
+      const rawText = nameInput.value;
+      user_data = rawText.split(',').map(name => name.trim()).filter(name => name.length > 0);
+
+      if (user_data.length === 0) user_data = ["-"];
+
+      const currentSelected1 = sysModeSelect1.value;
+      const currentSelected2 = sysModeSelect2.value;
+
+      sysModeSelect1.innerHTML = '<option value="sys_std">Zufall (Normal)</option>';
+      sysModeSelect2.innerHTML = '<option value="sys_std">Zufall (Normal)</option>';
+      
+      user_data.forEach(name => {
+        if(name !== "-") {
+          const opt1 = document.createElement("option");
+          opt1.value = name;
+          opt1.textContent = name;
+          sysModeSelect1.appendChild(opt1);
+
+          const opt2 = document.createElement("option");
+          opt2.value = name;
+          opt2.textContent = name;
+          sysModeSelect2.appendChild(opt2);
+        }
+      });
+
+      sysModeSelect1.value = currentSelected1;
+      sysModeSelect2.value = currentSelected2;
+      draw();
+    }
+
+    function draw() {
+      const segments = user_data.length;
+      const arcAngle = (2 * Math.PI) / segments;
+      const radius = canvas.width / 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < segments; i++) {
+        const theta = i * arcAngle;
+        
+        ctx.beginPath();
+        ctx.fillStyle = color_palette[i % color_palette.length];
+        ctx.moveTo(radius, radius);
+        ctx.arc(radius, radius, radius, theta, theta + arcAngle);
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(radius, radius);
+        ctx.rotate(theta + arcAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#ffffff";
+        
+        const fontSize = segments > 10 ? 20 : 26;
+        ctx.font = `800 ${fontSize}px Inter, sans-serif`;
+        ctx.shadowColor = "rgba(0,0,0,0.7)";
+        ctx.shadowBlur = 6;
+        ctx.fillText(user_data[i], radius - 35, 8);
+        ctx.restore();
+      }
+    }
+
+    updateNames();
+
+    function spin() {
+      if (user_data.length < 2 || user_data[0] === "-") return;
+
+      spinBtn.disabled = true;
+      resultDiv.textContent = "";
+
+      const segments = user_data.length;
+      
+      // Bestimme den Gewinner basierend auf der aktuellen Drehung (1. oder 2. Drehung)
+      let activeTarget = "sys_std";
+      if (spinCount === 0) {
+        activeTarget = sysModeSelect1.value;
+      } else if (spinCount === 1) {
+        activeTarget = sysModeSelect2.value;
+      }
+
+      let winningIndex;
+      if (activeTarget === "sys_std" || !user_data.includes(activeTarget)) {
+        winningIndex = Math.floor(Math.random() * segments);
+      } else {
+        winningIndex = user_data.indexOf(activeTarget);
+      }
+
+      const degreesPerSegment = 360 / segments;
+      const minRounds = 7;
+      
+      const stopAngle = 360 - (winningIndex * degreesPerSegment) - (degreesPerSegment / 2) - 90;
+      currentRotationDegrees += (360 * minRounds) + (stopAngle - (currentRotationDegrees % 360));
+
+      canvas.style.transform = `rotate(${currentRotationDegrees}deg)`;
+
+      setTimeout(() => {
+        resultDiv.textContent = `🎉 ${user_data[winningIndex]} gewinnt! 🎉`;
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        spinBtn.disabled = false;
+        
+        // Zähler für die nächste Drehung erhöhen
+        spinCount++;
+      }, 5500);
+    }
+  </script>
+</body>
+</html>
+  <head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="./style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pen</title>
+  </head>
+  <body>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
